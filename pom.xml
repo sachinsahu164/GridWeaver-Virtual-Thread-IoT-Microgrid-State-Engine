@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.gridweaver</groupId>
-	<artifactId>gridweaver-engine</artifactId>
+	<artifactId>gridweaver-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
