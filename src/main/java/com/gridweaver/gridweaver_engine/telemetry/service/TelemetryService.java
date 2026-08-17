@@ -6,6 +6,7 @@ import com.gridweaver.gridweaver_engine.telemetry.dto.TelemetryBatchRequest;
 import com.gridweaver.gridweaver_engine.telemetry.dto.TelemetryRequest;
 
 import com.gridweaver.gridweaver_engine.telemetry.engin.VirtualThreadTelemetryProcessor;
+import com.gridweaver.gridweaver_engine.telemetry.kafka.TelemetryKafkaProducer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +18,13 @@ public class TelemetryService {
     private final VirtualThreadTelemetryProcessor
             telemetryProcessor;
 
+    private final TelemetryKafkaProducer
+            telemetryKafkaProducer;
+
     public TelemetryService(
             SolarNodeRepository solarNodeRepository,
-            VirtualThreadTelemetryProcessor telemetryProcessor
+            VirtualThreadTelemetryProcessor telemetryProcessor,
+            TelemetryKafkaProducer telemetryKafkaProducer
     ) {
 
         this.solarNodeRepository =
@@ -27,6 +32,9 @@ public class TelemetryService {
 
         this.telemetryProcessor =
                 telemetryProcessor;
+
+        this.telemetryKafkaProducer =
+                telemetryKafkaProducer;
     }
 
     @Transactional
@@ -54,17 +62,27 @@ public class TelemetryService {
                         request.temperature()
                 );
 
-        return solarNodeRepository.save(
-                processedNode
+        SolarNode savedNode =
+                solarNodeRepository.save(
+                        processedNode
+                );
+
+        /*
+         * Publish telemetry event to Kafka
+         */
+        telemetryKafkaProducer.publish(
+                request
         );
+
+        return savedNode;
     }
+
     @Transactional
     public int processTelemetryBatch(
             TelemetryBatchRequest request
     ) {
 
         request.telemetry()
-                .parallelStream()
                 .forEach(
                         this::processTelemetry
                 );
