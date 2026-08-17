@@ -8,6 +8,7 @@ import com.gridweaver.gridweaver_engine.node.entity.SolarNode;
 import com.gridweaver.gridweaver_engine.node.repository.SolarNodeRepository;
 import com.gridweaver.gridweaver_engine.simulation.dto.SimulationResultResponse;
 import com.gridweaver.gridweaver_engine.simulation.dto.SimulationStatusResponse;
+import com.gridweaver.gridweaver_engine.simulation.engine.VirtualThreadSimulationEngine;
 import com.gridweaver.gridweaver_engine.simulation.model.SimulationMode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,130 +20,206 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SimulationService {
 
     private final SolarNodeRepository solarNodeRepository;
+
     private final BatteryRepository batteryRepository;
+
+    private final VirtualThreadSimulationEngine
+            virtualThreadSimulationEngine;
 
     private volatile boolean running = false;
 
-    private volatile SimulationMode mode = SimulationMode.STOPPED;
+    private volatile SimulationMode mode =
+            SimulationMode.STOPPED;
 
     public SimulationService(
             SolarNodeRepository solarNodeRepository,
-            BatteryRepository batteryRepository
+            BatteryRepository batteryRepository,
+            VirtualThreadSimulationEngine
+                    virtualThreadSimulationEngine
     ) {
-        this.solarNodeRepository = solarNodeRepository;
-        this.batteryRepository = batteryRepository;
+
+        this.solarNodeRepository =
+                solarNodeRepository;
+
+        this.batteryRepository =
+                batteryRepository;
+
+        this.virtualThreadSimulationEngine =
+                virtualThreadSimulationEngine;
     }
 
     @Transactional
     public synchronized SimulationStatusResponse startSimulation() {
 
         running = true;
+
         mode = SimulationMode.NORMAL;
 
-        List<SolarNode> nodes = solarNodeRepository.findAll();
-        List<Battery> batteries = batteryRepository.findAll();
+        List<SolarNode> nodes =
+                solarNodeRepository.findAll();
+
+        List<Battery> batteries =
+                batteryRepository.findAll();
+
+        /*
+         * Virtual Thread Processing
+         */
+        virtualThreadSimulationEngine
+                .processNodes(nodes);
 
         for (SolarNode node : nodes) {
 
-            double currentPower = node.getPowerOutput();
-
-            double variation =
-                    ThreadLocalRandom.current().nextDouble(-0.5, 0.5);
-
-            double newPower =
-                    Math.max(0.0, currentPower + variation);
-
-            node.setPowerOutput(newPower);
+            node.setPowerOutput(
+                    Math.max(
+                            0.0,
+                            node.getPowerOutput()
+                                    + ThreadLocalRandom
+                                    .current()
+                                    .nextDouble(-0.5, 0.5)
+                    )
+            );
 
             node.setTemperature(
-                    ThreadLocalRandom.current().nextDouble(25.0, 45.0)
+                    ThreadLocalRandom
+                            .current()
+                            .nextDouble(25.0, 45.0)
             );
 
             node.setVoltage(
-                    ThreadLocalRandom.current().nextDouble(220.0, 240.0)
+                    ThreadLocalRandom
+                            .current()
+                            .nextDouble(220.0, 240.0)
             );
 
-            node.setStatus(NodeStatus.ACTIVE);
+            node.setStatus(
+                    NodeStatus.ACTIVE
+            );
         }
 
         for (Battery battery : batteries) {
 
-            battery.setState(BatteryState.IDLE);
+            battery.setState(
+                    BatteryState.IDLE
+            );
 
-            battery.setPowerOutput(0.0);
+            battery.setPowerOutput(
+                    0.0
+            );
         }
 
         solarNodeRepository.saveAll(nodes);
+
         batteryRepository.saveAll(batteries);
 
         return buildStatus();
     }
 
     @Transactional
-    public synchronized SimulationResultResponse simulateStorm() {
+    public synchronized SimulationResultResponse
+    simulateStorm() {
 
         running = true;
+
         mode = SimulationMode.STORM;
 
-        List<SolarNode> nodes = solarNodeRepository.findAll();
-        List<Battery> batteries = batteryRepository.findAll();
+        List<SolarNode> nodes =
+                solarNodeRepository.findAll();
+
+        List<Battery> batteries =
+                batteryRepository.findAll();
 
         double totalPowerBefore =
                 calculateTotalSolarPower(nodes);
+
+        /*
+         * Virtual Thread Processing
+         */
+        virtualThreadSimulationEngine
+                .processNodes(nodes);
 
         long affectedNodes = 0;
 
         for (SolarNode node : nodes) {
 
-            double currentPower = node.getPowerOutput();
+            double currentPower =
+                    node.getPowerOutput();
 
             double stormPower =
                     currentPower *
-                            ThreadLocalRandom.current()
-                                    .nextDouble(0.25, 0.50);
+                            ThreadLocalRandom
+                                    .current()
+                                    .nextDouble(
+                                            0.25,
+                                            0.50
+                                    );
 
-            node.setPowerOutput(stormPower);
+            node.setPowerOutput(
+                    stormPower
+            );
 
-            node.setStatus(NodeStatus.WARNING);
+            node.setStatus(
+                    NodeStatus.WARNING
+            );
 
             node.setTemperature(
-                    ThreadLocalRandom.current().nextDouble(30.0, 50.0)
+                    ThreadLocalRandom
+                            .current()
+                            .nextDouble(
+                                    30.0,
+                                    50.0
+                            )
             );
 
             affectedNodes++;
         }
 
         long dischargingBatteries = 0;
+
         double totalBatteryPower = 0.0;
 
         for (Battery battery : batteries) {
 
             if (battery.getCurrentCharge() > 0) {
 
-                battery.setState(BatteryState.DISCHARGING);
+                battery.setState(
+                        BatteryState.DISCHARGING
+                );
 
                 double dischargePower =
-                        ThreadLocalRandom.current()
-                                .nextDouble(1.0, 3.0);
+                        ThreadLocalRandom
+                                .current()
+                                .nextDouble(
+                                        1.0,
+                                        3.0
+                                );
 
-                battery.setPowerOutput(dischargePower);
+                battery.setPowerOutput(
+                        dischargePower
+                );
 
                 double newCharge =
                         Math.max(
                                 0.0,
                                 battery.getCurrentCharge()
-                                        - (dischargePower * 0.05)
+                                        - (
+                                        dischargePower
+                                                * 0.05
+                                )
                         );
 
-                battery.setCurrentCharge(newCharge);
+                battery.setCurrentCharge(
+                        newCharge
+                );
 
-                totalBatteryPower += dischargePower;
+                totalBatteryPower +=
+                        dischargePower;
 
                 dischargingBatteries++;
             }
         }
 
         solarNodeRepository.saveAll(nodes);
+
         batteryRepository.saveAll(batteries);
 
         double totalPowerAfter =
@@ -152,7 +229,7 @@ public class SimulationService {
 
                 "STORM",
 
-                "Storm simulation completed successfully.",
+                "Storm simulation completed successfully using Java Virtual Threads.",
 
                 affectedNodes,
 
@@ -167,31 +244,43 @@ public class SimulationService {
     }
 
     @Transactional
-    public synchronized SimulationStatusResponse stopSimulation() {
+    public synchronized SimulationStatusResponse
+    stopSimulation() {
 
         running = false;
+
         mode = SimulationMode.STOPPED;
 
-        List<Battery> batteries = batteryRepository.findAll();
+        List<Battery> batteries =
+                batteryRepository.findAll();
 
         for (Battery battery : batteries) {
 
-            battery.setState(BatteryState.IDLE);
-            battery.setPowerOutput(0.0);
+            battery.setState(
+                    BatteryState.IDLE
+            );
+
+            battery.setPowerOutput(
+                    0.0
+            );
         }
 
-        batteryRepository.saveAll(batteries);
+        batteryRepository.saveAll(
+                batteries
+        );
 
         return buildStatus();
     }
 
     @Transactional(readOnly = true)
-    public SimulationStatusResponse getStatus() {
+    public SimulationStatusResponse
+    getStatus() {
 
         return buildStatus();
     }
 
-    private SimulationStatusResponse buildStatus() {
+    private SimulationStatusResponse
+    buildStatus() {
 
         List<SolarNode> nodes =
                 solarNodeRepository.findAll();
@@ -199,27 +288,43 @@ public class SimulationService {
         List<Battery> batteries =
                 batteryRepository.findAll();
 
-        long warningNodes = nodes.stream()
-                .filter(node ->
-                        node.getStatus() == NodeStatus.WARNING)
-                .count();
+        long warningNodes =
+                nodes.stream()
+                        .filter(
+                                node ->
+                                        node.getStatus()
+                                                == NodeStatus.WARNING
+                        )
+                        .count();
 
-        long faultNodes = nodes.stream()
-                .filter(node ->
-                        node.getStatus() == NodeStatus.FAULT)
-                .count();
+        long faultNodes =
+                nodes.stream()
+                        .filter(
+                                node ->
+                                        node.getStatus()
+                                                == NodeStatus.FAULT
+                        )
+                        .count();
 
-        long dischargingBatteries = batteries.stream()
-                .filter(battery ->
-                        battery.getState() == BatteryState.DISCHARGING)
-                .count();
+        long dischargingBatteries =
+                batteries.stream()
+                        .filter(
+                                battery ->
+                                        battery.getState()
+                                                == BatteryState.DISCHARGING
+                        )
+                        .count();
 
         double totalSolarPower =
-                calculateTotalSolarPower(nodes);
+                calculateTotalSolarPower(
+                        nodes
+                );
 
         double totalBatteryPower =
                 batteries.stream()
-                        .mapToDouble(Battery::getPowerOutput)
+                        .mapToDouble(
+                                Battery::getPowerOutput
+                        )
                         .sum();
 
         return new SimulationStatusResponse(
@@ -249,12 +354,18 @@ public class SimulationService {
     ) {
 
         return nodes.stream()
-                .mapToDouble(SolarNode::getPowerOutput)
+                .mapToDouble(
+                        SolarNode::getPowerOutput
+                )
                 .sum();
     }
 
-    private double round(double value) {
+    private double round(
+            double value
+    ) {
 
-        return Math.round(value * 100.0) / 100.0;
+        return Math.round(
+                value * 100.0
+        ) / 100.0;
     }
 }
