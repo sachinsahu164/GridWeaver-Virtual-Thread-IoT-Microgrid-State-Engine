@@ -1,3 +1,27 @@
+<!-- GRIDWEAVER ANIMATED HEADER -->
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:052e16,100:16a34a&height=200&section=header&text=⚡%20GridWeaver&fontSize=52&fontColor=ffffff&animation=fadeIn" width="100%"/>
+
+  <br/>
+
+  <a href="https://readme-typing-svg.demolab.com">
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=18&pause=1000&color=22C55E&center=true&vcenter=true&width=650&lines=Real-Time+IoT+Microgrid+State+Engine;Powered+by+Java+21+Virtual+Threads+%26+Kafka;Spring+State+Machine+%2B+React+GIS+Dashboard" alt="Typing SVG" />
+  </a>
+</div>
+
+<br/>
+
+<!-- TECH STACK BADGES -->
+<div align="center">
+  <img src="https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge&logo=openapi-initiative&logoColor=white" />
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+  <img src="https://img.shields.io/badge/Apache_Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white" />
+  <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Leaflet_GIS-199900?style=for-the-badge&logo=leaflet&logoColor=white" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+</div>
+
+---
 # ⚡ GridWeaver
 
 ### Real-Time Microgrid Monitoring & Automated Battery Response
