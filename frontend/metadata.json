@@ -1,0 +1,6 @@
+{
+  "name": "Gridweaver",
+  "description": "Gridweaver application imported from GitHub repository 0xAashif/Gridweaver.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
